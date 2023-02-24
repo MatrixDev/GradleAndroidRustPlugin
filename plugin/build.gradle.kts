@@ -8,6 +8,11 @@ plugins {
 group = "dev.matrix.android-rust"
 version = "0.1.0"
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
 repositories {
     google()
     mavenCentral()
@@ -26,6 +31,14 @@ gradlePlugin {
             implementationClass = "dev.matrix.agp.rust.AndroidRustPlugin"
             displayName = "Plugin for building Rust with Cargo in Android projects"
             description = "A plugin that helps build Rust JNI libraries with Cargo for use in Android projects."
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            url = uri(layout.buildDirectory.dir("repo"))
         }
     }
 }
