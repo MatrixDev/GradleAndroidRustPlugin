@@ -12,7 +12,7 @@ open class AndroidRustExtension {
     lateinit var path: File
 
     var profile = ""
-    var targets = Abi.values().asSequence().map { it.androidName }.toSet()
+    var targets = Abi.values().asSequence().map { it.rustName }.toSet()
     var minimumSupportedRustVersion = ""
     var buildTypes = hashMapOf(
         "debug" to AndroidRustBuildType().also {
