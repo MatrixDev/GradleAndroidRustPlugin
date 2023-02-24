@@ -2,7 +2,7 @@ package dev.matrix.agp.rust.utils
 
 import java.io.Serializable
 
-data class SemanticVersion(
+internal data class SemanticVersion(
     val major: Int,
     val minor: Int,
     val patch: Int,
@@ -24,15 +24,25 @@ data class SemanticVersion(
     }
 }
 
-fun SemanticVersion(version: String?): SemanticVersion {
-    val parts = version.orEmpty().split(".")
-    return SemanticVersion(
-        major = parts.getOrNull(0)?.toIntOrNull() ?: 0,
-        minor = parts.getOrNull(1)?.toIntOrNull() ?: 0,
-        patch = parts.getOrNull(2)?.toIntOrNull() ?: 0,
-    )
-}
+internal fun SemanticVersion(version: String?): SemanticVersion {
+    if (version.isNullOrEmpty()) {
+        return SemanticVersion(0, 0, 0)
+    }
 
-fun SemanticVersion?.orEmpty(): SemanticVersion {
-    return this ?: SemanticVersion(0, 0, 0)
+    val parts = version.split(".")
+    val major = requireNotNull(parts.getOrNull(0)?.toIntOrNull()) {
+        "failed to parse 'major' part of the version from '$version'"
+    }
+    val minor = requireNotNull(parts.getOrNull(1)?.toIntOrNull()) {
+        "failed to parse 'minor' part of the version from '$version'"
+    }
+    val patch = requireNotNull(parts.getOrNull(2)?.toIntOrNull()) {
+        "failed to parse 'patch' part of the version from '$version'"
+    }
+
+    return SemanticVersion(
+        major = major,
+        minor = minor,
+        patch = patch,
+    )
 }

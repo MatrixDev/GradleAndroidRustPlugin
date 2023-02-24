@@ -15,12 +15,14 @@ import java.util.*
 // TODO: migrate to variant API with artifacts when JNI will be supported
 // https://developer.android.com/studio/build/extend-agp#access-modify-artifacts
 //
+@Suppress("unused")
 class AndroidRustPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create("androidRust", AndroidRustExtension::class.java)
         val androidExtension = project.getAndroidExtension()
         val androidComponents = project.getAndroidComponentsExtension()
         val tasksByBuildType = HashMap<String, ArrayList<TaskProvider<RustBuildTask>>>()
+        val minimumSupportedRustVersion = SemanticVersion(extension.minimumSupportedRustVersion)
 
         androidComponents.finalizeDsl { dsl ->
             val allRustAbiSet = HashSet<Abi>()
@@ -35,7 +37,7 @@ class AndroidRustPlugin : Plugin<Project> {
                 val variantJniLibsDirectory = File(variantBuildDirectory, "jniLibs")
 
                 val rustBuildType = extension.buildTypes[buildType.name]
-                val rustAbiSet = resolveAbiList(project, rustBuildType?.targets ?: extension.targets)
+                val rustAbiSet = resolveAbiList(project, extension.targets, rustBuildType?.targets)
                 allRustAbiSet.addAll(rustAbiSet)
 
                 val cleanTaskName = "cleanRust${buildTypeName}"
@@ -65,7 +67,7 @@ class AndroidRustPlugin : Plugin<Project> {
                 }
             }
 
-            installRustComponentsIfNeeded(project, extension.minimumSupportedRustVersion, allRustAbiSet)
+            installRustComponentsIfNeeded(project, minimumSupportedRustVersion, allRustAbiSet)
         }
 
         androidComponents.onVariants { variant ->
@@ -81,15 +83,24 @@ class AndroidRustPlugin : Plugin<Project> {
         }
     }
 
-    private fun resolveAbiList(project: Project, requested: Collection<Abi>): Collection<Abi> {
-        val injectedBuildAbi = Abi.fromInjectedBuildAbi(project)
-        if (injectedBuildAbi.isEmpty()) {
+    private fun resolveAbiList(
+        project: Project,
+        extension: Collection<String>,
+        buildType: Collection<String>?,
+    ): Collection<Abi> {
+        val requested = when (buildType != null && buildType.isNotEmpty()) {
+            true -> Abi.fromRustNames(buildType)
+            else -> Abi.fromRustNames(extension)
+        }
+
+        val injected = Abi.fromInjectedBuildAbi(project)
+        if (injected.isEmpty()) {
             return requested
         }
 
-        val intersection = requested.intersect(injectedBuildAbi)
+        val intersection = requested.intersect(injected)
         check(intersection.isNotEmpty()) {
-            "ABIs requested by IDE ($injectedBuildAbi) are not supported by the build config ($requested)"
+            "ABIs requested by IDE ($injected) are not supported by the build config ($requested)"
         }
 
         return when {

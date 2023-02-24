@@ -1,18 +1,20 @@
 package dev.matrix.agp.rust
 
 import dev.matrix.agp.rust.utils.Abi
-import dev.matrix.agp.rust.utils.SemanticVersion
 import java.io.File
 
-@Suppress("MemberVisibilityCanBePrivate", "unused")
+@DslMarker
+annotation class AndroidRustDslMarker
+
+@AndroidRustDslMarker
+@Suppress("unused")
 open class AndroidRustExtension {
     lateinit var path: File
 
     var profile = ""
-    var targets = Abi.values().toSet()
-    var minimumSupportedRustVersion: SemanticVersion? = null
-
-    val buildTypes = hashMapOf(
+    var targets = Abi.values().asSequence().map { it.androidName }.toSet()
+    var minimumSupportedRustVersion = ""
+    var buildTypes = hashMapOf(
         "debug" to AndroidRustBuildType().also {
             it.profile = "dev"
         },
@@ -21,21 +23,14 @@ open class AndroidRustExtension {
         },
     )
 
-    fun buildType(name: String, configure: (AndroidRustBuildType) -> Unit) {
+    fun buildType(name: String, configure: AndroidRustBuildType.() -> Unit) {
         configure(buildTypes.getOrPut(name, ::AndroidRustBuildType))
-    }
-
-    fun debugBuildType(configure: (AndroidRustBuildType) -> Unit) {
-        buildType("debug", configure)
-    }
-
-    fun releaseBuildType(configure: (AndroidRustBuildType) -> Unit) {
-        buildType("release", configure)
     }
 }
 
+@AndroidRustDslMarker
 @Suppress("unused")
 open class AndroidRustBuildType {
     var profile = ""
-    var targets: List<Abi>? = null
+    var targets = emptySet<String>()
 }

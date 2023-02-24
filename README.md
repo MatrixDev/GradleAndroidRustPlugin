@@ -46,24 +46,21 @@ androidRust {
     profile = "release"
 
     // default abi targets
-    targets = setOf(Abi.Arm, Abi.Arm64)
+    targets = setOf("arm", "arm64")
 
     // MSRV, plugin will update rust if installed version is lower than requested
-    minimumSupportedRustVersion = SemanticVersion("1.62.1")
+    minimumSupportedRustVersion = "1.62.1"
 
     // "debug" build type specific configuration
     buildType("debug") {
         // use "dev" profile in rust
-        it.profile = "dev"
-
-        // build only Arm64 version
-        it.targets = setOf(Abi.Arm64)
+        profile = "dev"
     }
 
     // "release" build type specific configuration
     buildType("release") {
         // build all supported abi versions
-        it.targets = setOf(Abi.Arm, Abi.Arm64, Abi.X86, Abi.X86_64)
+        targets = setOf("arm", "arm64", "x86", "x86_64")
     }
 }
 ```

@@ -2,7 +2,7 @@ package dev.matrix.agp.rust.utils
 
 import org.gradle.api.Project
 
-enum class Abi(
+internal enum class Abi(
     val rustName: String,
     val androidName: String,
     val compilerTriple: String,
@@ -31,7 +31,7 @@ enum class Abi(
         rustTargetTriple = "armv7-linux-androideabi",
     ),
     Arm64(
-        rustName = "aarch64",
+        rustName = "arm64",
         androidName = "arm64-v8a",
         compilerTriple = "aarch64-linux-android",
         binUtilsTriple = "aarch64-linux-android",
@@ -40,12 +40,18 @@ enum class Abi(
 
     @Suppress("unused", "MemberVisibilityCanBePrivate")
     companion object {
-        fun fromRustName(value: String) = values().find { it.rustName == value }
-        fun fromAndroidName(value: String) = values().find { it.androidName == value }
+        fun fromRustName(value: String) = values().find { it.rustName.equals(value, ignoreCase = true) }
+        fun fromAndroidName(value: String) = values().find { it.androidName.equals(value, ignoreCase = true) }
 
         fun fromInjectedBuildAbi(project: Project): Set<Abi> {
             val values = project.properties["android.injected.build.abi"] ?: return emptySet()
             return values.toString().split(",").mapNotNullTo(HashSet()) { fromAndroidName(it.trim()) }
+        }
+
+        fun fromRustNames(names: Collection<String>): Set<Abi> {
+            return names.asSequence().map {
+                requireNotNull(fromRustName(it)) { "unsupported abi version string: ${it}" }
+            }.toSet()
         }
     }
 
