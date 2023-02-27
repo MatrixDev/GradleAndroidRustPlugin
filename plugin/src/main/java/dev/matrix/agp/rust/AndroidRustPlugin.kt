@@ -15,7 +15,7 @@ import java.util.*
 // TODO: migrate to variant API with artifacts when JNI will be supported
 // https://developer.android.com/studio/build/extend-agp#access-modify-artifacts
 //
-@Suppress("unused")
+@Suppress("unused", "UnstableApiUsage")
 class AndroidRustPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create("androidRust", AndroidRustExtension::class.java)
@@ -61,10 +61,7 @@ class AndroidRustPlugin : Plugin<Project> {
                     tasksByBuildType.getOrPut(buildType.name, ::ArrayList).add(buildTask)
                 }
 
-                val sourceSet = dsl.sourceSets.findByName(buildType.name)
-                if (sourceSet != null) {
-                    sourceSet.jniLibs.srcDir(variantJniLibsDirectory)
-                }
+                dsl.sourceSets.findByName(buildType.name)?.jniLibs?.srcDir(variantJniLibsDirectory)
             }
 
             installRustComponentsIfNeeded(project, minimumSupportedRustVersion, allRustAbiSet)

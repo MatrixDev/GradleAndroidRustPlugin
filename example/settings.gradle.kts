@@ -4,6 +4,6 @@ include(":app")
 
 includeBuild("..") {
     dependencySubstitution {
-        substitute(module("dev.matrix.android-rust:plugin")).using(project(":plugin"))
+        substitute(module("io.github.MatrixDev.android-rust:plugin")).using(project(":plugin"))
     }
 }

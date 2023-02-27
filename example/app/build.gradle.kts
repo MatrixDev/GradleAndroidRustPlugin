@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("dev.matrix.android-rust")
+    id("io.github.MatrixDev.android-rust")
 }
 
 android {
