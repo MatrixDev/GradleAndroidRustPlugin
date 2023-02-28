@@ -9,7 +9,7 @@ internal fun installRustComponentsIfNeeded(
     minimalVersion: SemanticVersion?,
     abiSet: Collection<Abi>,
 ) {
-    if (Os.isWindows) {
+    if (Os.current.isWindows) {
         return
     }
 

@@ -1,6 +1,7 @@
 package dev.matrix.agp.rust
 
 import dev.matrix.agp.rust.utils.Abi
+import dev.matrix.agp.rust.utils.Os
 import dev.matrix.agp.rust.utils.SemanticVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
@@ -45,11 +46,18 @@ internal abstract class RustBuildTask : DefaultTask() {
         val variantBuildDirectory = variantBuildDirectory.get()
         val variantJniLibsDirectory = variantJniLibsDirectory.get()
 
+        val platform = when (Os.current) {
+            Os.Linux -> "linux-x86_64"
+            Os.MacOs -> "darwin-x86_64"
+            Os.Windows -> "windows-x86_64"
+            Os.Unknown -> throw Exception("OS is not supported")
+        }
+
         var toolchainFolder = ndkDirectory
         toolchainFolder = File(toolchainFolder, "toolchains")
         toolchainFolder = File(toolchainFolder, "llvm")
         toolchainFolder = File(toolchainFolder, "prebuilt")
-        toolchainFolder = File(toolchainFolder, "darwin-x86_64")
+        toolchainFolder = File(toolchainFolder, platform)
         toolchainFolder = File(toolchainFolder, "bin")
 
         val cc = File(toolchainFolder, abi.cc(apiLevel))

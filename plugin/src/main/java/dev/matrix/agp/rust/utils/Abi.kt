@@ -55,12 +55,12 @@ internal enum class Abi(
         }
     }
 
-    fun cc(apiLevel: Int) = when (Os.isWindows) {
+    fun cc(apiLevel: Int) = when (Os.current.isWindows) {
         true -> "${compilerTriple}${apiLevel}-clang.cmd"
         else -> "${compilerTriple}${apiLevel}-clang"
     }
 
-    fun ccx(apiLevel: Int) = when (Os.isWindows) {
+    fun ccx(apiLevel: Int) = when (Os.current.isWindows) {
         true -> "${compilerTriple}${apiLevel}-clang++.cmd"
         else -> "${compilerTriple}${apiLevel}-clang++"
     }
