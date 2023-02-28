@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.github.MatrixDev.android-rust"
-version = "0.2.1"
+version = "0.2.2"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
