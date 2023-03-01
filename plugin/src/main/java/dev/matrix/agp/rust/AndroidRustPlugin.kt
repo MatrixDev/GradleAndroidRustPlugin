@@ -43,7 +43,7 @@ class AndroidRustPlugin : Plugin<Project> {
 
                 for ((moduleName, module) in extension.modules) {
                     val moduleNameCap = moduleName.capitalize(Locale.getDefault())
-                    val moduleBuildDirectory = File(variantBuildDirectory, moduleName)
+                    val moduleBuildDirectory = File(variantBuildDirectory, "lib_$moduleName")
 
                     val rustBuildType = module.buildTypes[buildType.name]
                     val rustConfiguration = mergeRustConfigurations(rustBuildType, module, extension)
