@@ -30,7 +30,7 @@ gradlePlugin {
             id = "io.github.MatrixDev.android-rust"
             implementationClass = "dev.matrix.agp.rust.AndroidRustPlugin"
             displayName = "Plugin for building Rust with Cargo in Android projects"
-            description = "A plugin that helps build Rust JNI libraries with Cargo for use in Android projects."
+            description = "This plugin helps with building Rust JNI libraries with Cargo for use in Android projects."
         }
     }
 }
