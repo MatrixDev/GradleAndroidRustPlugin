@@ -43,6 +43,6 @@ class AndroidRustBuildType : AndroidRustConfiguration()
 @Suppress("unused")
 open class AndroidRustConfiguration {
     var profile = ""
-    var targets = ArrayList<String>()
+    var targets = listOf<String>()
     var runTests: Boolean? = null
 }

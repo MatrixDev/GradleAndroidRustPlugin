@@ -53,7 +53,7 @@ androidRust {
         profile = "release"
 
         // default abi targets
-        targets = setOf("arm", "arm64")
+        targets = listOf("arm", "arm64")
 
         // "debug" build type specific configuration
         buildType("debug") {
@@ -67,7 +67,7 @@ androidRust {
             runTests = true
 
             // build all supported abi versions
-            targets = setOf("arm", "arm64", "x86", "x86_64")
+            targets = listOf("arm", "arm64", "x86", "x86_64")
         }
     }
 
