@@ -23,6 +23,12 @@ android {
         }
     }
 
+    sourceSets {
+        getByName("main") {
+            java.srcDir("src/rust_library")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -36,6 +42,10 @@ android {
 androidRust {
     module("library") {
         path = file("src/rust_library")
+
+        buildType("release") {
+            runTests = true
+        }
     }
     minimumSupportedRustVersion = "1.62.1"
 }

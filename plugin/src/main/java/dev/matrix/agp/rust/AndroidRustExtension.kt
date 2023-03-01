@@ -44,4 +44,5 @@ class AndroidRustBuildType : AndroidRustConfiguration()
 open class AndroidRustConfiguration {
     var profile = ""
     var targets = ArrayList<String>()
+    var runTests: Boolean? = null
 }

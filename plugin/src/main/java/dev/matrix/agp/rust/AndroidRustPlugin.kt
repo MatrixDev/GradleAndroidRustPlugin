@@ -36,7 +36,7 @@ class AndroidRustPlugin : Plugin<Project> {
                 val variantBuildDirectory = File(extensionBuildDirectory, buildType.name)
                 val variantJniLibsDirectory = File(variantBuildDirectory, "jniLibs")
 
-                val cleanTaskName = "cleanRust${buildTypeNameCap}"
+                val cleanTaskName = "clean${buildTypeNameCap}RustJniLibs"
                 val cleanTask = project.tasks.register(cleanTaskName, RustCleanTask::class.java) {
                     this.variantJniLibsDirectory.set(variantJniLibsDirectory)
                 }
@@ -48,11 +48,22 @@ class AndroidRustPlugin : Plugin<Project> {
                     val rustBuildType = module.buildTypes[buildType.name]
                     val rustConfiguration = mergeRustConfigurations(rustBuildType, module, extension)
 
+                    val testTask = when (rustConfiguration.runTests) {
+                        true -> {
+                            val testTaskName = "test${moduleNameCap}Rust"
+                            project.tasks.register(testTaskName, RustTestTask::class.java) {
+                                this.rustProjectDirectory.set(module.path)
+                                this.cargoTargetDirectory.set(moduleBuildDirectory)
+                            }.dependsOn(cleanTask)
+                        }
+                        else -> null
+                    }
+
                     val rustAbiSet = resolveAbiList(project, rustConfiguration.targets)
                     allRustAbiSet.addAll(rustAbiSet)
 
                     for (rustAbi in rustAbiSet) {
-                        val buildTaskName = "buildRust${buildTypeNameCap}${moduleNameCap}[${rustAbi.androidName}]"
+                        val buildTaskName = "build${buildTypeNameCap}${moduleNameCap}Rust[${rustAbi.androidName}]"
                         val buildTask = project.tasks.register(buildTaskName, RustBuildTask::class.java) {
                             this.abi.set(rustAbi)
                             this.apiLevel.set(dsl.defaultConfig.minSdk ?: 21)
@@ -63,7 +74,7 @@ class AndroidRustPlugin : Plugin<Project> {
                             this.cargoTargetDirectory.set(moduleBuildDirectory)
                             this.variantJniLibsDirectory.set(variantJniLibsDirectory)
                         }
-                        buildTask.dependsOn(cleanTask)
+                        buildTask.dependsOn(testTask ?: cleanTask)
                         tasksByBuildType.getOrPut(buildType.name, ::ArrayList).add(buildTask)
                     }
                 }
@@ -111,6 +122,7 @@ class AndroidRustPlugin : Plugin<Project> {
         val defaultConfiguration = AndroidRustConfiguration().also {
             it.profile = "release"
             it.targets = Abi.values().mapTo(ArrayList(), Abi::rustName)
+            it.runTests = null
         }
 
         return configurations.asSequence()
@@ -122,6 +134,9 @@ class AndroidRustPlugin : Plugin<Project> {
                 }
                 if (result.targets.isEmpty()) {
                     result.targets = base.targets
+                }
+                if (result.runTests == null) {
+                    result.runTests = base.runTests
                 }
                 result
             }
