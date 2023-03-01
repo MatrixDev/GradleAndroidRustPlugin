@@ -30,7 +30,7 @@ internal abstract class RustBuildTask : DefaultTask() {
     abstract val rustProjectDirectory: Property<File>
 
     @get:Input
-    abstract val variantBuildDirectory: Property<File>
+    abstract val cargoTargetDirectory: Property<File>
 
     @get:Input
     abstract val variantJniLibsDirectory: Property<File>
@@ -43,7 +43,7 @@ internal abstract class RustBuildTask : DefaultTask() {
         val ndkDirectory = ndkDirectory.get()
         val rustProfile = rustProfile.get()
         val rustProjectDirectory = rustProjectDirectory.get()
-        val variantBuildDirectory = variantBuildDirectory.get()
+        val cargoTargetDirectory = cargoTargetDirectory.get()
         val variantJniLibsDirectory = variantJniLibsDirectory.get()
 
         val platform = when (Os.current) {
@@ -53,18 +53,11 @@ internal abstract class RustBuildTask : DefaultTask() {
             Os.Unknown -> throw Exception("OS is not supported")
         }
 
-        var toolchainFolder = ndkDirectory
-        toolchainFolder = File(toolchainFolder, "toolchains")
-        toolchainFolder = File(toolchainFolder, "llvm")
-        toolchainFolder = File(toolchainFolder, "prebuilt")
-        toolchainFolder = File(toolchainFolder, platform)
-        toolchainFolder = File(toolchainFolder, "bin")
-
+        val toolchainFolder = File(ndkDirectory, "toolchains/llvm/prebuilt/$platform/bin")
         val cc = File(toolchainFolder, abi.cc(apiLevel))
         val cxx = File(toolchainFolder, abi.ccx(apiLevel))
         val ar = File(toolchainFolder, abi.ar(ndkVersion.major))
 
-        val cargoTargetDirectory = File(variantBuildDirectory, "build")
         val cargoTargetTriplet = abi.rustTargetTriple
             .replace('-', '_')
             .toUpperCase(Locale.getDefault())

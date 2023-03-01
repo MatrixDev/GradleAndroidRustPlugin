@@ -25,40 +25,47 @@ class AndroidRustPlugin : Plugin<Project> {
         val minimumSupportedRustVersion = SemanticVersion(extension.minimumSupportedRustVersion)
 
         androidComponents.finalizeDsl { dsl ->
-            val allRustAbiSet = HashSet<Abi>()
+            val allRustAbiSet = mutableSetOf<Abi>()
             val ndkDirectory = androidExtension.ndkDirectory
             val ndkVersion = SemanticVersion(androidExtension.ndkVersion)
             val extensionBuildDirectory = File(project.buildDir, "intermediates/rust")
 
             for (buildType in dsl.buildTypes) {
-                val buildTypeName = buildType.name.capitalize(Locale.getDefault())
+                val buildTypeNameCap = buildType.name.capitalize(Locale.getDefault())
 
                 val variantBuildDirectory = File(extensionBuildDirectory, buildType.name)
                 val variantJniLibsDirectory = File(variantBuildDirectory, "jniLibs")
 
-                val rustBuildType = extension.buildTypes[buildType.name]
-                val rustAbiSet = resolveAbiList(project, extension.targets, rustBuildType?.targets)
-                allRustAbiSet.addAll(rustAbiSet)
-
-                val cleanTaskName = "cleanRust${buildTypeName}"
+                val cleanTaskName = "cleanRust${buildTypeNameCap}"
                 val cleanTask = project.tasks.register(cleanTaskName, RustCleanTask::class.java) {
                     this.variantJniLibsDirectory.set(variantJniLibsDirectory)
                 }
 
-                for (rustAbi in rustAbiSet) {
-                    val buildTaskName = "buildRust${buildTypeName}[${rustAbi.androidName}]"
-                    val buildTask = project.tasks.register(buildTaskName, RustBuildTask::class.java) {
-                        this.abi.set(rustAbi)
-                        this.apiLevel.set(dsl.defaultConfig.minSdk ?: 21)
-                        this.ndkVersion.set(ndkVersion)
-                        this.ndkDirectory.set(ndkDirectory)
-                        this.rustProfile.set(rustBuildType?.profile.orEmpty().ifEmpty { extension.profile })
-                        this.rustProjectDirectory.set(extension.path)
-                        this.variantBuildDirectory.set(variantBuildDirectory)
-                        this.variantJniLibsDirectory.set(variantJniLibsDirectory)
+                for ((moduleName, module) in extension.modules) {
+                    val moduleNameCap = moduleName.capitalize(Locale.getDefault())
+                    val moduleBuildDirectory = File(variantBuildDirectory, moduleName)
+
+                    val rustBuildType = module.buildTypes[buildType.name]
+                    val rustConfiguration = mergeRustConfigurations(rustBuildType, module, extension)
+
+                    val rustAbiSet = resolveAbiList(project, rustConfiguration.targets)
+                    allRustAbiSet.addAll(rustAbiSet)
+
+                    for (rustAbi in rustAbiSet) {
+                        val buildTaskName = "buildRust${buildTypeNameCap}${moduleNameCap}[${rustAbi.androidName}]"
+                        val buildTask = project.tasks.register(buildTaskName, RustBuildTask::class.java) {
+                            this.abi.set(rustAbi)
+                            this.apiLevel.set(dsl.defaultConfig.minSdk ?: 21)
+                            this.ndkVersion.set(ndkVersion)
+                            this.ndkDirectory.set(ndkDirectory)
+                            this.rustProfile.set(rustConfiguration.profile)
+                            this.rustProjectDirectory.set(module.path)
+                            this.cargoTargetDirectory.set(moduleBuildDirectory)
+                            this.variantJniLibsDirectory.set(variantJniLibsDirectory)
+                        }
+                        buildTask.dependsOn(cleanTask)
+                        tasksByBuildType.getOrPut(buildType.name, ::ArrayList).add(buildTask)
                     }
-                    buildTask.dependsOn(cleanTask)
-                    tasksByBuildType.getOrPut(buildType.name, ::ArrayList).add(buildTask)
                 }
 
                 dsl.sourceSets.findByName(buildType.name)?.jniLibs?.srcDir(variantJniLibsDirectory)
@@ -80,30 +87,43 @@ class AndroidRustPlugin : Plugin<Project> {
         }
     }
 
-    private fun resolveAbiList(
-        project: Project,
-        extension: Collection<String>,
-        buildType: Collection<String>?,
-    ): Collection<Abi> {
-        val requested = when (buildType != null && buildType.isNotEmpty()) {
-            true -> Abi.fromRustNames(buildType)
-            else -> Abi.fromRustNames(extension)
+    private fun resolveAbiList(project: Project, requested: Collection<String>): Collection<Abi> {
+        val requestedAbi = Abi.fromRustNames(requested)
+
+        val injectedAbi = Abi.fromInjectedBuildAbi(project)
+        if (injectedAbi.isEmpty()) {
+            return requestedAbi
         }
 
-        val injected = Abi.fromInjectedBuildAbi(project)
-        if (injected.isEmpty()) {
-            return requested
-        }
-
-        val intersection = requested.intersect(injected)
-        check(intersection.isNotEmpty()) {
-            "ABIs requested by IDE ($injected) are not supported by the build config ($requested)"
+        val intersectionAbi = requestedAbi.intersect(injectedAbi)
+        check(intersectionAbi.isNotEmpty()) {
+            "ABIs requested by IDE ($injectedAbi) are not supported by the build config ($requested)"
         }
 
         return when {
-            intersection.contains(Abi.Arm64) -> listOf(Abi.Arm64)
-            intersection.contains(Abi.X86_64) -> listOf(Abi.X86_64)
-            else -> listOf(intersection.first())
+            intersectionAbi.contains(Abi.Arm64) -> listOf(Abi.Arm64)
+            intersectionAbi.contains(Abi.X86_64) -> listOf(Abi.X86_64)
+            else -> listOf(intersectionAbi.first())
         }
+    }
+
+    private fun mergeRustConfigurations(vararg configurations: AndroidRustConfiguration?): AndroidRustConfiguration {
+        val defaultConfiguration = AndroidRustConfiguration().also {
+            it.profile = "release"
+            it.targets = Abi.values().mapTo(ArrayList(), Abi::rustName)
+        }
+
+        return configurations.asSequence()
+            .filterNotNull()
+            .plus(defaultConfiguration)
+            .reduce { result, base ->
+                if (result.profile.isEmpty()) {
+                    result.profile = base.profile
+                }
+                if (result.targets.isEmpty()) {
+                    result.targets = base.targets
+                }
+                result
+            }
     }
 }

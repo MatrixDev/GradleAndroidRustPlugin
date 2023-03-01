@@ -34,7 +34,9 @@ android {
 }
 
 androidRust {
-    path = file("src/rust_library")
+    module("library") {
+        path = file("src/rust_library")
+    }
     minimumSupportedRustVersion = "1.62.1"
 }
 

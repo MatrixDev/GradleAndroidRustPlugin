@@ -45,13 +45,16 @@ internal enum class Abi(
 
         fun fromInjectedBuildAbi(project: Project): Set<Abi> {
             val values = project.properties["android.injected.build.abi"] ?: return emptySet()
-            return values.toString().split(",").mapNotNullTo(HashSet()) { fromAndroidName(it.trim()) }
+            return values.toString().split(",")
+                .asSequence()
+                .mapNotNull { fromAndroidName(it.trim()) }
+                .toSet()
         }
 
         fun fromRustNames(names: Collection<String>): Set<Abi> {
-            return names.asSequence().map {
-                requireNotNull(fromRustName(it)) { "unsupported abi version string: ${it}" }
-            }.toSet()
+            return names.asSequence()
+                .map { requireNotNull(fromRustName(it)) { "unsupported abi version string: $it" } }
+                .toSet()
         }
     }
 
