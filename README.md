@@ -13,7 +13,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("dev.matrix.android-rust:0.3.0")
+        classpath("dev.matrix.android-rust:0.3.1")
     }
 }
 ```
