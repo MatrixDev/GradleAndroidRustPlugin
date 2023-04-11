@@ -13,7 +13,7 @@ internal fun installRustComponentsIfNeeded(
         return
     }
 
-    if (minimalVersion != null) {
+    if (minimalVersion != null && minimalVersion.isValid) {
         val actualVersion = readRustCompilerVersion(project)
         if (actualVersion < minimalVersion) {
             installRustUp(project)
@@ -90,10 +90,11 @@ private fun readRustCompilerVersion(project: Project): SemanticVersion {
     }.assertNormalExitValue()
 
     val outputText = String(output.toByteArray())
-    val regex = Regex("^rustc (\\d+\\.\\d+\\.\\d+) .*$", RegexOption.DOT_MATCHES_ALL)
+    val regex = Regex("^rustc (\\d+\\.\\d+\\.\\d+)(-nightly)? .*$", RegexOption.DOT_MATCHES_ALL)
     val match = checkNotNull(regex.matchEntire(outputText)) {
         "failed to parse rust compiler version: $outputText"
     }
+
     return SemanticVersion(match.groupValues[1])
 }
 

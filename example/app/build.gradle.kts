@@ -6,6 +6,7 @@ plugins {
 
 android {
     compileSdk = 33
+    ndkVersion = "25.2.9519653"
 
     defaultConfig {
         applicationId = "dev.matrix.rust"

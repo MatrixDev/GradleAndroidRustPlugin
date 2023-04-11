@@ -22,7 +22,6 @@ class AndroidRustPlugin : Plugin<Project> {
         val androidExtension = project.getAndroidExtension()
         val androidComponents = project.getAndroidComponentsExtension()
         val tasksByBuildType = HashMap<String, ArrayList<TaskProvider<RustBuildTask>>>()
-        val minimumSupportedRustVersion = SemanticVersion(extension.minimumSupportedRustVersion)
 
         androidComponents.finalizeDsl { dsl ->
             val allRustAbiSet = mutableSetOf<Abi>()
@@ -82,6 +81,7 @@ class AndroidRustPlugin : Plugin<Project> {
                 dsl.sourceSets.findByName(buildType.name)?.jniLibs?.srcDir(variantJniLibsDirectory)
             }
 
+            val minimumSupportedRustVersion = SemanticVersion(extension.minimumSupportedRustVersion)
             installRustComponentsIfNeeded(project, minimumSupportedRustVersion, allRustAbiSet)
         }
 
