@@ -16,7 +16,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("io.github.MatrixDev.android-rust:plugin:0.3.2")
+        classpath("io.github.MatrixDev.android-rust:plugin:0.4.0")
     }
 }
 ```
