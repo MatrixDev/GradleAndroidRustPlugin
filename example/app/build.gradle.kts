@@ -1,10 +1,11 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("io.github.MatrixDev.android-rust")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.android.rust)
 }
 
 android {
+    namespace = "dev.matrix.rust"
     compileSdk = 33
     ndkVersion = "25.2.9519653"
 

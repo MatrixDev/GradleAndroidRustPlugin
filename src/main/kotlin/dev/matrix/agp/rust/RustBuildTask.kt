@@ -8,7 +8,6 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import java.io.File
-import java.util.*
 
 internal abstract class RustBuildTask : DefaultTask() {
     @get:Input
@@ -60,7 +59,7 @@ internal abstract class RustBuildTask : DefaultTask() {
 
         val cargoTargetTriplet = abi.rustTargetTriple
             .replace('-', '_')
-            .toUpperCase(Locale.getDefault())
+            .uppercase()
 
         project.exec {
             standardOutput = System.out

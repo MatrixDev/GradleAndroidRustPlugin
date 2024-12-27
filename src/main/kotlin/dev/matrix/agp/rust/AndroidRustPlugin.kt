@@ -9,7 +9,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import java.io.File
-import java.util.*
+import java.util.Locale
 
 //
 // TODO: migrate to variant API with artifacts when JNI will be supported
@@ -55,6 +55,7 @@ class AndroidRustPlugin : Plugin<Project> {
                                 this.cargoTargetDirectory.set(moduleBuildDirectory)
                             }.dependsOn(cleanTask)
                         }
+
                         else -> null
                     }
 

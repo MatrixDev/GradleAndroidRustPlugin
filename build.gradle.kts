@@ -1,29 +1,45 @@
-buildscript {
-    val kotlinVersion by extra { "1.5.31" }
+plugins {
+    `java-gradle-plugin`
+    `kotlin-dsl`
+    id("com.gradle.plugin-publish") version "1.3.0"
+}
 
-    repositories {
-        google()
-        mavenCentral()
-        maven("https://plugins.gradle.org/m2/")
-    }
+val pluginId = "io.github.MatrixDev.android-rust"
 
-    dependencies {
-        classpath("com.android.tools.build:gradle:7.2.2")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+group = pluginId
+version = "0.3.2"
+
+gradlePlugin {
+    website = "https://github.com/MatrixDev/GradleAndroidRustPlugin"
+    vcsUrl = "https://github.com/MatrixDev/GradleAndroidRustPlugin.git"
+
+    plugins {
+        create("AndroidRust") {
+            id = pluginId
+            implementationClass = "dev.matrix.agp.rust.AndroidRustPlugin"
+            displayName = "Plugin for building Rust with Cargo in Android projects"
+            description = "This plugin helps with building Rust JNI libraries with Cargo for use in Android projects."
+        }
     }
 }
 
-allprojects {
+publishing {
     repositories {
-        google()
-        mavenCentral()
-        maven("https://plugins.gradle.org/m2/")
+        maven {
+            url = uri(layout.buildDirectory.dir("repo"))
+        }
     }
 }
 
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
-    rootProject.childProjects.forEach { project ->
-        delete(project.value.buildDir)
-    }
+repositories {
+    mavenCentral()
+    google()
+    maven("https://plugins.gradle.org/m2/")
+}
+
+dependencies {
+    gradleApi()
+
+    implementation(libs.agp)
+    implementation(libs.agp.api)
 }
