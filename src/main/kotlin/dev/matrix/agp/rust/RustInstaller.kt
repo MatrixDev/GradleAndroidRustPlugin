@@ -3,6 +3,7 @@ package dev.matrix.agp.rust
 import dev.matrix.agp.rust.utils.Abi
 import dev.matrix.agp.rust.utils.NullOutputStream
 import dev.matrix.agp.rust.utils.Os
+import dev.matrix.agp.rust.utils.RustBinaries
 import dev.matrix.agp.rust.utils.SemanticVersion
 import dev.matrix.agp.rust.utils.log
 import org.gradle.api.Project
@@ -12,38 +13,39 @@ internal fun installRustComponentsIfNeeded(
     project: Project,
     minimalVersion: SemanticVersion?,
     abiSet: Collection<Abi>,
+    rustBinaries: RustBinaries,
 ) {
     if (Os.current.isWindows) {
         return
     }
 
     if (minimalVersion != null && minimalVersion.isValid) {
-        val actualVersion = readRustCompilerVersion(project)
+        val actualVersion = readRustCompilerVersion(project, rustBinaries)
         if (actualVersion < minimalVersion) {
-            installRustUp(project)
-            updateRust(project)
+            installRustUp(project, rustBinaries)
+            updateRust(project, rustBinaries)
         }
     }
 
     if (abiSet.isNotEmpty()) {
-        installRustUp(project)
+        installRustUp(project, rustBinaries)
 
-        val installedAbiSet = readRustUpInstalledTargets(project)
+        val installedAbiSet = readRustUpInstalledTargets(project, rustBinaries)
         for (abi in abiSet) {
             if (installedAbiSet.contains(abi)) {
                 continue
             }
-            installRustTarget(project, abi)
+            installRustTarget(project, abi, rustBinaries)
         }
     }
 }
 
-private fun installRustUp(project: Project) {
+private fun installRustUp(project: Project, rustBinaries: RustBinaries) {
     try {
         val result = project.exec {
             standardOutput = NullOutputStream
             errorOutput = NullOutputStream
-            executable("rustup")
+            executable(rustBinaries.rustup)
             args("-V")
         }
 
@@ -62,34 +64,34 @@ private fun installRustUp(project: Project) {
     }.assertNormalExitValue()
 }
 
-private fun updateRust(project: Project) {
+private fun updateRust(project: Project, rustBinaries: RustBinaries) {
     log("updating rust version")
 
     project.exec {
         standardOutput = NullOutputStream
         errorOutput = NullOutputStream
-        executable("rustup")
+        executable(rustBinaries.rustup)
         args("update")
     }.assertNormalExitValue()
 }
 
-private fun installRustTarget(project: Project, abi: Abi) {
+private fun installRustTarget(project: Project, abi: Abi, rustBinaries: RustBinaries) {
     log("installing rust target $abi (${abi.rustTargetTriple})")
 
     project.exec {
         standardOutput = NullOutputStream
         errorOutput = NullOutputStream
-        executable("rustup")
+        executable(rustBinaries.rustup)
         args("target", "add", abi.rustTargetTriple)
     }.assertNormalExitValue()
 }
 
-private fun readRustCompilerVersion(project: Project): SemanticVersion {
+private fun readRustCompilerVersion(project: Project, rustBinaries: RustBinaries): SemanticVersion {
     val output = ByteArrayOutputStream()
     project.exec {
         standardOutput = output
         errorOutput = NullOutputStream
-        executable("rustc")
+        executable(rustBinaries.rustc)
         args("--version")
     }.assertNormalExitValue()
 
@@ -102,12 +104,12 @@ private fun readRustCompilerVersion(project: Project): SemanticVersion {
     return SemanticVersion(match.groupValues[1])
 }
 
-private fun readRustUpInstalledTargets(project: Project): Set<Abi> {
+private fun readRustUpInstalledTargets(project: Project, rustBinaries: RustBinaries): Set<Abi> {
     val output = ByteArrayOutputStream()
     project.exec {
         standardOutput = output
         errorOutput = NullOutputStream
-        executable("rustup")
+        executable(rustBinaries.rustup)
         args("target", "list")
     }.assertNormalExitValue()
 
