@@ -28,4 +28,4 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-android-rust = { id = "io.github.MatrixDev.android-rust", version = "0.3.2" }
+android-rust = { id = "io.github.MatrixDev.android-rust", version = "0.4.0" }
