@@ -2,6 +2,7 @@ package dev.matrix.agp.rust
 
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import dev.matrix.agp.rust.utils.Abi
+import dev.matrix.agp.rust.utils.RustBinaries
 import dev.matrix.agp.rust.utils.SemanticVersion
 import dev.matrix.agp.rust.utils.getAndroidComponentsExtension
 import dev.matrix.agp.rust.utils.getAndroidExtension
@@ -15,9 +16,10 @@ import java.util.Locale
 // TODO: migrate to variant API with artifacts when JNI will be supported
 // https://developer.android.com/studio/build/extend-agp#access-modify-artifacts
 //
-@Suppress("unused", "UnstableApiUsage")
+@Suppress("unused")
 class AndroidRustPlugin : Plugin<Project> {
     override fun apply(project: Project) {
+        val rustBinaries = RustBinaries(project)
         val extension = project.extensions.create("androidRust", AndroidRustExtension::class.java)
         val androidExtension = project.getAndroidExtension()
         val androidComponents = project.getAndroidComponentsExtension()
@@ -65,6 +67,7 @@ class AndroidRustPlugin : Plugin<Project> {
                     for (rustAbi in rustAbiSet) {
                         val buildTaskName = "build${buildTypeNameCap}${moduleNameCap}Rust[${rustAbi.androidName}]"
                         val buildTask = project.tasks.register(buildTaskName, RustBuildTask::class.java) {
+                            this.rustBinaries.set(rustBinaries)
                             this.abi.set(rustAbi)
                             this.apiLevel.set(dsl.defaultConfig.minSdk ?: 21)
                             this.ndkVersion.set(ndkVersion)
@@ -83,7 +86,7 @@ class AndroidRustPlugin : Plugin<Project> {
             }
 
             val minimumSupportedRustVersion = SemanticVersion(extension.minimumSupportedRustVersion)
-            installRustComponentsIfNeeded(project, minimumSupportedRustVersion, allRustAbiSet)
+            installRustComponentsIfNeeded(project, minimumSupportedRustVersion, allRustAbiSet, rustBinaries)
         }
 
         androidComponents.onVariants { variant ->

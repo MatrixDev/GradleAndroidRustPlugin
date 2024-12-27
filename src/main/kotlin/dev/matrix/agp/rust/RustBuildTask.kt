@@ -2,6 +2,7 @@ package dev.matrix.agp.rust
 
 import dev.matrix.agp.rust.utils.Abi
 import dev.matrix.agp.rust.utils.Os
+import dev.matrix.agp.rust.utils.RustBinaries
 import dev.matrix.agp.rust.utils.SemanticVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
@@ -10,6 +11,9 @@ import org.gradle.api.tasks.TaskAction
 import java.io.File
 
 internal abstract class RustBuildTask : DefaultTask() {
+    @get:Input
+    abstract val rustBinaries: Property<RustBinaries>
+
     @get:Input
     abstract val abi: Property<Abi>
 
@@ -36,6 +40,7 @@ internal abstract class RustBuildTask : DefaultTask() {
 
     @TaskAction
     fun taskAction() {
+        val rustBinaries = rustBinaries.get()
         val abi = abi.get()
         val apiLevel = apiLevel.get()
         val ndkVersion = ndkVersion.get()
@@ -72,7 +77,7 @@ internal abstract class RustBuildTask : DefaultTask() {
             environment("CARGO_TARGET_DIR", cargoTargetDirectory.absolutePath)
             environment("CARGO_TARGET_${cargoTargetTriplet}_LINKER", cc)
 
-            commandLine("cargo")
+            commandLine(rustBinaries.cargo)
 
             args("build")
             args("--lib")
