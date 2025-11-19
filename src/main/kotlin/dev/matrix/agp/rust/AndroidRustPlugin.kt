@@ -33,10 +33,10 @@ abstract class AndroidRustPlugin @Inject constructor(
             val allRustAbiSet = mutableSetOf<Abi>()
             val ndkDirectory = androidExtension.ndkDirectory
             val ndkVersion = SemanticVersion(androidExtension.ndkVersion)
-            val extensionBuildDirectory = File(project.buildDir, "intermediates/rust")
+            val extensionBuildDirectory = project.layout.buildDirectory.dir("intermediates/rust").get().asFile
 
             for (buildType in dsl.buildTypes) {
-                val buildTypeNameCap = buildType.name.capitalize(Locale.getDefault())
+                val buildTypeNameCap = buildType.name.replaceFirstChar(Char::titlecase)
 
                 val variantBuildDirectory = File(extensionBuildDirectory, buildType.name)
                 val variantJniLibsDirectory = File(variantBuildDirectory, "jniLibs")
@@ -47,7 +47,7 @@ abstract class AndroidRustPlugin @Inject constructor(
                 }
 
                 for ((moduleName, module) in extension.modules) {
-                    val moduleNameCap = moduleName.capitalize(Locale.getDefault())
+                    val moduleNameCap = moduleName.replaceFirstChar(Char::titlecase)
                     val moduleBuildDirectory = File(variantBuildDirectory, "lib_$moduleName")
 
                     val rustBuildType = module.buildTypes[buildType.name]
@@ -101,7 +101,7 @@ abstract class AndroidRustPlugin @Inject constructor(
 
         androidComponents.onVariants { variant ->
             val tasks = tasksByBuildType[variant.buildType] ?: return@onVariants
-            val variantName = variant.name.capitalize(Locale.getDefault())
+            val variantName = variant.name.replaceFirstChar(Char::titlecase)
 
             project.afterEvaluate {
                 val parentTask = project.tasks.getByName("pre${variantName}Build")

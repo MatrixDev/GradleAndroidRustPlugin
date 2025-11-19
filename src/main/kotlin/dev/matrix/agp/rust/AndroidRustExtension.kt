@@ -9,7 +9,7 @@ annotation class AndroidRustDslMarker
 @Suppress("unused")
 open class AndroidRustExtension : AndroidRustConfiguration() {
     /**
-     * Specify minimum supported rust version.
+     * Specify minimum supported Rust version.
      *
      * Plugin will automatically use `rustup update` command to
      * update rust version in case installed versions is not high enough.
@@ -17,14 +17,14 @@ open class AndroidRustExtension : AndroidRustConfiguration() {
     var minimumSupportedRustVersion = ""
 
     /**
-     * Configuration map of all rust libraries to build.
+     * Configuration map of all Rust libraries to build.
      *
-     * Keys of this map are rust crates names.
+     * Keys of this map are Rust crates names.
      */
     var modules = mutableMapOf<String, AndroidRustModule>()
 
     /**
-     * Configure rust module/library to build.
+     * Configure Rust module/library to build.
      *
      * @param name Rust crate name.
      */
@@ -37,7 +37,7 @@ open class AndroidRustExtension : AndroidRustConfiguration() {
 @Suppress("unused")
 class AndroidRustModule : AndroidRustConfiguration() {
     /**
-     * Path to the rust project folder.
+     * Path to the Rust project folder.
      *
      * This is the folder containing `Cargo.toml` file.
      */
@@ -46,7 +46,7 @@ class AndroidRustModule : AndroidRustConfiguration() {
     /**
      * All supported build type configurations.
      *
-     * Keys of this map should correspond to this project's build variants.
+     * Keys of this map should correspond to the current project build variants.
      */
     var buildTypes = hashMapOf(
         "debug" to AndroidRustBuildType().also {
@@ -54,14 +54,13 @@ class AndroidRustModule : AndroidRustConfiguration() {
         },
         "release" to AndroidRustBuildType().also {
             it.profile = "release"
-            it.disableAbiOptimization = true
         },
     )
 
     /**
-     * Configure rust build options.
+     * Configure Rust build options.
      *
-     * @param name this project's build variant.
+     * @param name current project build variant.
      */
     fun buildType(name: String, configure: AndroidRustBuildType.() -> Unit) {
         buildTypes.getOrPut(name, ::AndroidRustBuildType).configure()
