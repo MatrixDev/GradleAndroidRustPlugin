@@ -20,7 +20,7 @@ import javax.inject.Inject
 //
 @Suppress("unused")
 abstract class AndroidRustPlugin @Inject constructor(
-    private val execOperations: ExecOperations
+    private val execOperations: ExecOperations,
 ) : Plugin<Project> {
     override fun apply(project: Project) {
         val rustBinaries = RustBinaries(project)
@@ -65,7 +65,7 @@ abstract class AndroidRustPlugin @Inject constructor(
                         else -> null
                     }
 
-                    val rustAbiSet = resolveAbiList(project, rustConfiguration.targets, extension)
+                    val rustAbiSet = resolveAbiList(project, rustConfiguration)
                     allRustAbiSet.addAll(rustAbiSet)
 
                     for (rustAbi in rustAbiSet) {
@@ -90,7 +90,12 @@ abstract class AndroidRustPlugin @Inject constructor(
             }
 
             val minimumSupportedRustVersion = SemanticVersion(extension.minimumSupportedRustVersion)
-            installRustComponentsIfNeeded(project, execOperations, minimumSupportedRustVersion, allRustAbiSet, rustBinaries)
+            installRustComponentsIfNeeded(
+                execOperations,
+                minimumSupportedRustVersion,
+                allRustAbiSet,
+                rustBinaries
+            )
         }
 
         androidComponents.onVariants { variant ->
@@ -106,11 +111,11 @@ abstract class AndroidRustPlugin @Inject constructor(
         }
     }
 
-    private fun resolveAbiList(project: Project, requested: Collection<String>, extension: AndroidRustExtension): Collection<Abi> {
-        val requestedAbi = Abi.fromRustNames(requested)
+    private fun resolveAbiList(project: Project, config: AndroidRustConfiguration): Collection<Abi> {
+        val requestedAbi = Abi.fromRustNames(config.targets)
 
         // If optimization is disabled, build all requested ABIs
-        if (extension.disableAbiOptimization) {
+        if (config.disableAbiOptimization == true) {
             return requestedAbi
         }
 
@@ -122,7 +127,7 @@ abstract class AndroidRustPlugin @Inject constructor(
 
         val intersectionAbi = requestedAbi.intersect(injectedAbi)
         check(intersectionAbi.isNotEmpty()) {
-            "ABIs requested by IDE ($injectedAbi) are not supported by the build config ($requested)"
+            "ABIs requested by IDE ($injectedAbi) are not supported by the build config (${config.targets})"
         }
 
         // Return all intersecting ABIs, not just one
@@ -130,11 +135,15 @@ abstract class AndroidRustPlugin @Inject constructor(
         return intersectionAbi.toList()
     }
 
+    /**
+     * Merge configurations with the first one having the highest priority
+     */
     private fun mergeRustConfigurations(vararg configurations: AndroidRustConfiguration?): AndroidRustConfiguration {
         val defaultConfiguration = AndroidRustConfiguration().also {
             it.profile = "release"
             it.targets = Abi.values().mapTo(ArrayList(), Abi::rustName)
             it.runTests = null
+            it.disableAbiOptimization = null
         }
 
         return configurations.asSequence()
@@ -149,6 +158,9 @@ abstract class AndroidRustPlugin @Inject constructor(
                 }
                 if (result.runTests == null) {
                     result.runTests = base.runTests
+                }
+                if (result.disableAbiOptimization == null) {
+                    result.disableAbiOptimization = base.disableAbiOptimization
                 }
                 result
             }

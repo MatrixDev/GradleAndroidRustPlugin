@@ -6,12 +6,10 @@ import dev.matrix.agp.rust.utils.Os
 import dev.matrix.agp.rust.utils.RustBinaries
 import dev.matrix.agp.rust.utils.SemanticVersion
 import dev.matrix.agp.rust.utils.log
-import org.gradle.api.Project
 import org.gradle.process.ExecOperations
 import java.io.ByteArrayOutputStream
 
 internal fun installRustComponentsIfNeeded(
-    project: Project,
     execOperations: ExecOperations,
     minimalVersion: SemanticVersion?,
     abiSet: Collection<Abi>,
@@ -54,7 +52,7 @@ private fun installRustUp(execOperations: ExecOperations, rustBinaries: RustBina
         if (result.exitValue == 0) {
             return
         }
-    } catch (ignored: Exception) {
+    } catch (_: Exception) {
     }
 
     log("installing rustup")

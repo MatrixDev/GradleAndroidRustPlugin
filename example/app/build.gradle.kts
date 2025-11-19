@@ -49,7 +49,7 @@ androidRust {
             runTests = true
         }
     }
-    minimumSupportedRustVersion = "1.62.1"
+    minimumSupportedRustVersion = "1.91.1"
 }
 
 dependencies {
