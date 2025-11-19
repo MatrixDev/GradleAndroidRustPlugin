@@ -57,6 +57,7 @@ abstract class AndroidRustPlugin @Inject constructor(
                         true -> {
                             val testTaskName = "test${moduleNameCap}Rust"
                             project.tasks.register(testTaskName, RustTestTask::class.java) {
+                                this.rustBinaries.set(rustBinaries)
                                 this.rustProjectDirectory.set(module.path)
                                 this.cargoTargetDirectory.set(moduleBuildDirectory)
                             }.dependsOn(cleanTask)

@@ -1,5 +1,6 @@
 package dev.matrix.agp.rust
 
+import dev.matrix.agp.rust.utils.RustBinaries
 import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -13,6 +14,9 @@ internal abstract class RustTestTask : DefaultTask() {
     abstract val execOperations: ExecOperations
 
     @get:Input
+    abstract val rustBinaries: Property<RustBinaries>
+
+    @get:Input
     abstract val rustProjectDirectory: Property<File>
 
     @get:Input
@@ -20,6 +24,7 @@ internal abstract class RustTestTask : DefaultTask() {
 
     @TaskAction
     fun taskAction() {
+        val rustBinaries = rustBinaries.get()
         val rustProjectDirectory = rustProjectDirectory.get()
         val cargoTargetDirectory = cargoTargetDirectory.get()
 
@@ -30,7 +35,7 @@ internal abstract class RustTestTask : DefaultTask() {
 
             environment("CARGO_TARGET_DIR", cargoTargetDirectory.absolutePath)
 
-            commandLine("cargo")
+            commandLine(rustBinaries.cargo)
 
             args("test")
         }.assertNormalExitValue()
