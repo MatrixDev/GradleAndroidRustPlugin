@@ -61,7 +61,7 @@ class AndroidRustPlugin : Plugin<Project> {
                         else -> null
                     }
 
-                    val rustAbiSet = resolveAbiList(project, rustConfiguration.targets)
+                    val rustAbiSet = resolveAbiList(project, rustConfiguration.targets, extension)
                     allRustAbiSet.addAll(rustAbiSet)
 
                     for (rustAbi in rustAbiSet) {
@@ -102,9 +102,15 @@ class AndroidRustPlugin : Plugin<Project> {
         }
     }
 
-    private fun resolveAbiList(project: Project, requested: Collection<String>): Collection<Abi> {
+    private fun resolveAbiList(project: Project, requested: Collection<String>, extension: AndroidRustExtension): Collection<Abi> {
         val requestedAbi = Abi.fromRustNames(requested)
 
+        // If optimization is disabled, build all requested ABIs
+        if (extension.disableAbiOptimization) {
+            return requestedAbi
+        }
+
+        // Otherwise, use IDE ABI injection optimization for faster development builds
         val injectedAbi = Abi.fromInjectedBuildAbi(project)
         if (injectedAbi.isEmpty()) {
             return requestedAbi
@@ -115,11 +121,9 @@ class AndroidRustPlugin : Plugin<Project> {
             "ABIs requested by IDE ($injectedAbi) are not supported by the build config ($requested)"
         }
 
-        return when {
-            intersectionAbi.contains(Abi.Arm64) -> listOf(Abi.Arm64)
-            intersectionAbi.contains(Abi.X86_64) -> listOf(Abi.X86_64)
-            else -> listOf(intersectionAbi.first())
-        }
+        // Return all intersecting ABIs, not just one
+        // The original logic only returned a single ABI which caused deployment issues
+        return intersectionAbi.toList()
     }
 
     private fun mergeRustConfigurations(vararg configurations: AndroidRustConfiguration?): AndroidRustConfiguration {
