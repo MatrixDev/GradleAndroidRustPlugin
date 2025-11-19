@@ -4,9 +4,14 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
 import java.io.File
+import javax.inject.Inject
 
 internal abstract class RustTestTask : DefaultTask() {
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
     @get:Input
     abstract val rustProjectDirectory: Property<File>
 
@@ -18,7 +23,7 @@ internal abstract class RustTestTask : DefaultTask() {
         val rustProjectDirectory = rustProjectDirectory.get()
         val cargoTargetDirectory = cargoTargetDirectory.get()
 
-        project.exec {
+        execOperations.exec {
             standardOutput = System.out
             errorOutput = System.out
             workingDir = rustProjectDirectory

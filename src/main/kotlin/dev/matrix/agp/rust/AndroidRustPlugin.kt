@@ -9,15 +9,19 @@ import dev.matrix.agp.rust.utils.getAndroidExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.process.ExecOperations
 import java.io.File
 import java.util.Locale
+import javax.inject.Inject
 
 //
 // TODO: migrate to variant API with artifacts when JNI will be supported
 // https://developer.android.com/studio/build/extend-agp#access-modify-artifacts
 //
 @Suppress("unused")
-class AndroidRustPlugin : Plugin<Project> {
+abstract class AndroidRustPlugin @Inject constructor(
+    private val execOperations: ExecOperations
+) : Plugin<Project> {
     override fun apply(project: Project) {
         val rustBinaries = RustBinaries(project)
         val extension = project.extensions.create("androidRust", AndroidRustExtension::class.java)
@@ -86,7 +90,7 @@ class AndroidRustPlugin : Plugin<Project> {
             }
 
             val minimumSupportedRustVersion = SemanticVersion(extension.minimumSupportedRustVersion)
-            installRustComponentsIfNeeded(project, minimumSupportedRustVersion, allRustAbiSet, rustBinaries)
+            installRustComponentsIfNeeded(project, execOperations, minimumSupportedRustVersion, allRustAbiSet, rustBinaries)
         }
 
         androidComponents.onVariants { variant ->
