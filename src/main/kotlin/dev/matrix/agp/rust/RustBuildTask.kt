@@ -8,9 +8,14 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
 import java.io.File
+import javax.inject.Inject
 
 internal abstract class RustBuildTask : DefaultTask() {
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
     @get:Input
     abstract val rustBinaries: Property<RustBinaries>
 
@@ -66,7 +71,7 @@ internal abstract class RustBuildTask : DefaultTask() {
             .replace('-', '_')
             .uppercase()
 
-        project.exec {
+        execOperations.exec {
             standardOutput = System.out
             errorOutput = System.out
             workingDir = rustProjectDirectory

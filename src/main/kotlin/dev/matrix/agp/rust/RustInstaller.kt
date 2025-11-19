@@ -7,10 +7,12 @@ import dev.matrix.agp.rust.utils.RustBinaries
 import dev.matrix.agp.rust.utils.SemanticVersion
 import dev.matrix.agp.rust.utils.log
 import org.gradle.api.Project
+import org.gradle.process.ExecOperations
 import java.io.ByteArrayOutputStream
 
 internal fun installRustComponentsIfNeeded(
     project: Project,
+    execOperations: ExecOperations,
     minimalVersion: SemanticVersion?,
     abiSet: Collection<Abi>,
     rustBinaries: RustBinaries,
@@ -20,29 +22,29 @@ internal fun installRustComponentsIfNeeded(
     }
 
     if (minimalVersion != null && minimalVersion.isValid) {
-        val actualVersion = readRustCompilerVersion(project, rustBinaries)
+        val actualVersion = readRustCompilerVersion(execOperations, rustBinaries)
         if (actualVersion < minimalVersion) {
-            installRustUp(project, rustBinaries)
-            updateRust(project, rustBinaries)
+            installRustUp(execOperations, rustBinaries)
+            updateRust(execOperations, rustBinaries)
         }
     }
 
     if (abiSet.isNotEmpty()) {
-        installRustUp(project, rustBinaries)
+        installRustUp(execOperations, rustBinaries)
 
-        val installedAbiSet = readRustUpInstalledTargets(project, rustBinaries)
+        val installedAbiSet = readRustUpInstalledTargets(execOperations, rustBinaries)
         for (abi in abiSet) {
             if (installedAbiSet.contains(abi)) {
                 continue
             }
-            installRustTarget(project, abi, rustBinaries)
+            installRustTarget(execOperations, abi, rustBinaries)
         }
     }
 }
 
-private fun installRustUp(project: Project, rustBinaries: RustBinaries) {
+private fun installRustUp(execOperations: ExecOperations, rustBinaries: RustBinaries) {
     try {
-        val result = project.exec {
+        val result = execOperations.exec {
             standardOutput = NullOutputStream
             errorOutput = NullOutputStream
             executable(rustBinaries.rustup)
@@ -57,17 +59,17 @@ private fun installRustUp(project: Project, rustBinaries: RustBinaries) {
 
     log("installing rustup")
 
-    project.exec {
+    execOperations.exec {
         standardOutput = NullOutputStream
         errorOutput = NullOutputStream
         commandLine("bash", "-c", "\"curl\" --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
     }.assertNormalExitValue()
 }
 
-private fun updateRust(project: Project, rustBinaries: RustBinaries) {
+private fun updateRust(execOperations: ExecOperations, rustBinaries: RustBinaries) {
     log("updating rust version")
 
-    project.exec {
+    execOperations.exec {
         standardOutput = NullOutputStream
         errorOutput = NullOutputStream
         executable(rustBinaries.rustup)
@@ -75,10 +77,10 @@ private fun updateRust(project: Project, rustBinaries: RustBinaries) {
     }.assertNormalExitValue()
 }
 
-private fun installRustTarget(project: Project, abi: Abi, rustBinaries: RustBinaries) {
+private fun installRustTarget(execOperations: ExecOperations, abi: Abi, rustBinaries: RustBinaries) {
     log("installing rust target $abi (${abi.rustTargetTriple})")
 
-    project.exec {
+    execOperations.exec {
         standardOutput = NullOutputStream
         errorOutput = NullOutputStream
         executable(rustBinaries.rustup)
@@ -86,9 +88,9 @@ private fun installRustTarget(project: Project, abi: Abi, rustBinaries: RustBina
     }.assertNormalExitValue()
 }
 
-private fun readRustCompilerVersion(project: Project, rustBinaries: RustBinaries): SemanticVersion {
+private fun readRustCompilerVersion(execOperations: ExecOperations, rustBinaries: RustBinaries): SemanticVersion {
     val output = ByteArrayOutputStream()
-    project.exec {
+    execOperations.exec {
         standardOutput = output
         errorOutput = NullOutputStream
         executable(rustBinaries.rustc)
@@ -104,9 +106,9 @@ private fun readRustCompilerVersion(project: Project, rustBinaries: RustBinaries
     return SemanticVersion(match.groupValues[1])
 }
 
-private fun readRustUpInstalledTargets(project: Project, rustBinaries: RustBinaries): Set<Abi> {
+private fun readRustUpInstalledTargets(execOperations: ExecOperations, rustBinaries: RustBinaries): Set<Abi> {
     val output = ByteArrayOutputStream()
-    project.exec {
+    execOperations.exec {
         standardOutput = output
         errorOutput = NullOutputStream
         executable(rustBinaries.rustup)
