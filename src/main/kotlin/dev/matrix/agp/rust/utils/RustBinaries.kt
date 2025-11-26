@@ -8,6 +8,7 @@ import java.util.Properties
 @Suppress("SpellCheckingInspection")
 internal data class RustBinaries(
     val cargo: String = "cargo",
+    val cargoNdk: String = "cargo-ndk",
     val rustc: String = "rustc",
     val rustup: String = "rustup",
 ) : Serializable {
@@ -24,6 +25,7 @@ internal data class RustBinaries(
                 if (bin.exists()) {
                     path = path.copy(
                         cargo = File(bin, path.cargo).absolutePath,
+                        cargoNdk = File(bin, path.cargoNdk).absolutePath,
                         rustc = File(bin, path.rustc).absolutePath,
                         rustup = File(bin, path.rustup).absolutePath,
                     )

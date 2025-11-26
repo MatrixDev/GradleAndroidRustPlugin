@@ -11,13 +11,8 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.process.ExecOperations
 import java.io.File
-import java.util.Locale
 import javax.inject.Inject
 
-//
-// TODO: migrate to variant API with artifacts when JNI will be supported
-// https://developer.android.com/studio/build/extend-agp#access-modify-artifacts
-//
 @Suppress("unused")
 abstract class AndroidRustPlugin @Inject constructor(
     private val execOperations: ExecOperations,
@@ -30,6 +25,22 @@ abstract class AndroidRustPlugin @Inject constructor(
         val tasksByBuildType = HashMap<String, ArrayList<TaskProvider<RustBuildTask>>>()
 
         androidComponents.finalizeDsl { dsl ->
+            for ((moduleName, module) in extension.modules) {
+                try {
+                    val modulePath = module.path
+                    require(modulePath.exists()) {
+                        "Rust module '$moduleName': path does not exist: $modulePath"
+                    }
+                    
+                    val cargoToml = File(modulePath, "Cargo.toml")
+                    require(cargoToml.exists()) {
+                        "Rust module '$moduleName': Cargo.toml not found at $modulePath"
+                    }
+                } catch (e: UninitializedPropertyAccessException) {
+                    throw IllegalStateException("Rust module '$moduleName': path must be specified")
+                }
+            }
+
             val allRustAbiSet = mutableSetOf<Abi>()
             val ndkDirectory = androidExtension.ndkDirectory
             val ndkVersion = SemanticVersion(androidExtension.ndkVersion)
@@ -81,8 +92,17 @@ abstract class AndroidRustPlugin @Inject constructor(
                             this.rustProjectDirectory.set(module.path)
                             this.cargoTargetDirectory.set(moduleBuildDirectory)
                             this.variantJniLibsDirectory.set(variantJniLibsDirectory)
+                            this.cargoToml.set(project.layout.projectDirectory.file("${module.path.absolutePath}/Cargo.toml"))
+                            this.sourceFiles.from(project.fileTree(module.path) {
+                                include("**/*.rs")
+                                include("**/Cargo.toml")
+                                include("**/Cargo.lock")
+                            })
+                            this.outputDirectory.set(variantJniLibsDirectory)
                         }
-                        buildTask.dependsOn(testTask ?: cleanTask)
+                        buildTask.configure {
+                            mustRunAfter(testTask ?: cleanTask)
+                        }
                         tasksByBuildType.getOrPut(buildType.name, ::ArrayList).add(buildTask)
                     }
                 }
@@ -115,12 +135,10 @@ abstract class AndroidRustPlugin @Inject constructor(
     private fun resolveAbiList(project: Project, config: AndroidRustConfiguration): Collection<Abi> {
         val requestedAbi = Abi.fromRustNames(config.targets)
 
-        // If optimization is disabled, build all requested ABIs
         if (config.disableAbiOptimization == true) {
             return requestedAbi
         }
 
-        // Otherwise, use IDE ABI injection optimization for faster development builds
         val injectedAbi = Abi.fromInjectedBuildAbi(project)
         if (injectedAbi.isEmpty()) {
             return requestedAbi
@@ -131,14 +149,9 @@ abstract class AndroidRustPlugin @Inject constructor(
             "ABIs requested by IDE ($injectedAbi) are not supported by the build config (${config.targets})"
         }
 
-        // Return all intersecting ABIs, not just one
-        // The original logic only returned a single ABI which caused deployment issues
         return intersectionAbi.toList()
     }
 
-    /**
-     * Merge configurations with the first one having the highest priority
-     */
     private fun mergeRustConfigurations(vararg configurations: AndroidRustConfiguration?): AndroidRustConfiguration {
         val defaultConfiguration = AndroidRustConfiguration().also {
             it.profile = "release"

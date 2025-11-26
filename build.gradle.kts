@@ -7,7 +7,7 @@ plugins {
 val pluginId = "io.github.MatrixDev.android-rust"
 
 group = pluginId
-version = "0.5.0"
+version = "0.6.0"
 
 @Suppress("UnstableApiUsage")
 gradlePlugin {

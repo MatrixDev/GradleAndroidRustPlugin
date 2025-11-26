@@ -27,7 +27,7 @@ android {
 
     sourceSets {
         getByName("main") {
-            java.srcDir("src/rust_library")
+            java.srcDir("src/main/jni")
         }
     }
 
@@ -43,7 +43,7 @@ android {
 
 androidRust {
     module("library") {
-        path = file("src/rust_library")
+        path = file("src/main/jni")
 
         buildType("release") {
             runTests = true
