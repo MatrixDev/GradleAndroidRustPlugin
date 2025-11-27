@@ -1,10 +1,27 @@
 [package]
 name = "rust_library"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
 jni = "0.19.0"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+debug = false
+overflow-checks = false
+incremental = false
+
+[profile.release.package."*"]
+opt-level = "z"
+codegen-units = 1
+strip = true
+debug = false
+overflow-checks = false

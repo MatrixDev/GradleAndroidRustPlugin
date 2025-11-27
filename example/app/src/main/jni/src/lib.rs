@@ -1,16 +1,12 @@
-use jni::JNIEnv;
-use jni::objects::JObject;
+use jni::{JNIEnv, objects::JObject};
 use jni::sys::jstring;
 
-#[no_mangle]
-extern "C" fn Java_dev_matrix_rust_MainActivity_callRustCode(env: JNIEnv, _: JObject) -> jstring {
-    env.new_string("Hello from rust!").unwrap().into_inner()
-}
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn test() {
-        println!("Hello from rust test!")
-    }
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_dev_rodroid_rust_MainActivity_callRustCode(
+    env: JNIEnv,
+    _: JObject,
+) -> jstring {
+    let message = "Hello from Rust";
+    let java_string = env.new_string(message).expect("Couldn't create java string!");
+    java_string.into_inner()
 }

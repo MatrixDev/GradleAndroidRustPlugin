@@ -97,8 +97,11 @@ internal abstract class RustBuildTask : DefaultTask() {
                 errorOutput = System.out
                 workingDir = rustProjectDirectory
 
-                commandLine(rustBinaries.cargoNdk)
+                environment("ANDROID_NDK_HOME", ndkDirectory.absolutePath)
+
+                commandLine(rustBinaries.cargo)
                 
+                args("ndk")
                 args("-o", variantJniLibsDirectory.absolutePath)
                 args("--platform", apiLevel)
                 args("-t", abi.androidName)
@@ -117,6 +120,7 @@ internal abstract class RustBuildTask : DefaultTask() {
                 - Check that your Cargo.toml has [lib] crate-type = ["cdylib"]
                 - Ensure NDK version ${ndkVersion.get()} is properly installed
                 - Ensure cargo-ndk is installed: cargo install cargo-ndk
+                - Set ANDROID_NDK_HOME environment variable to: $ndkDirectory
                 - Try running: cargo ndk -t ${abi.androidName} build
                 
                 Error: ${e.message}
