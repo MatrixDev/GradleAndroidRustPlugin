@@ -2,7 +2,7 @@
 
 A Gradle plugin for building Rust libraries with Cargo for Android projects.
 
-## Version 0.6.0 - New Features
+## Version 0.7.0 - New Features
 
 ### 🚀 Major Improvements
 
@@ -14,6 +14,8 @@ The plugin now uses `cargo-ndk` instead of raw `cargo` commands for building And
 - No manual environment variable setup needed
 - Fewer linking errors and build failures
 - Better compatibility with Android NDK
+- Automatic rust home finding
+- Fixed bugs
 
 The plugin will automatically install `cargo-ndk` if it's not already available.
 
