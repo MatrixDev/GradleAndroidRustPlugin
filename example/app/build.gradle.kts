@@ -54,7 +54,7 @@ androidRust {
     module("library") {
         path = file("src/main/jni")
         //targets = listOf("arm64", "x86_64", "arm", "x86")
-        targets = listOf("x86_64")
+        targets = listOf("arm64")
         buildType("release") {
             runTests = true
         }

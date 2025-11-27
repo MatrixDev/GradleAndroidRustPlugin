@@ -130,6 +130,10 @@ androidRust {
 4. **Output Placement**: Compiled .so files are automatically placed in jniLibs directories
 5. **Integration**: Android build system picks up the libraries automatically
 
+### How to install
+
+The puglin is avaiable here : https://plugins.gradle.org/plugin/io.github.rodroidmods.android-rust
+
 ### Cargo.toml Requirements
 
 Your Rust library must be configured as a C dynamic library:
@@ -202,6 +206,8 @@ org.gradle.parallel=true
 The plugin will automatically install cargo-ndk, but if you see errors, manually install:
 ```bash
 cargo install cargo-ndk
+
+and if you have issues with rust beign not founded, than just ad cargo.bin path in local.prop and problem will be fixed
 ```
 
 #### NDK not found
@@ -225,7 +231,7 @@ Ensure PowerShell execution policy allows running scripts:
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-### Migration from 0.5.0
+### Migration from 0.6.0
 
 The plugin now uses `cargo-ndk` internally. No configuration changes are required, but you may need to install cargo-ndk:
 
@@ -234,6 +240,15 @@ cargo install cargo-ndk
 ```
 
 All existing configurations will continue to work.
+
+### Note
+
+Is recomandded that for now to use latest version 0.7.0, as 0.6.0 have bugs and i fixed all of them.
+
+### Credits
+
++ Rodroid Mods
++ Matrix dev
 
 ## License
 
