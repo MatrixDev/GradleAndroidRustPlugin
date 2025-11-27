@@ -8,6 +8,7 @@ import dev.matrix.agp.rust.utils.SemanticVersion
 import dev.matrix.agp.rust.utils.log
 import org.gradle.process.ExecOperations
 import java.io.ByteArrayOutputStream
+import java.io.File
 
 internal fun installRustComponentsIfNeeded(
     execOperations: ExecOperations,
@@ -15,10 +16,6 @@ internal fun installRustComponentsIfNeeded(
     abiSet: Collection<Abi>,
     rustBinaries: RustBinaries,
 ) {
-    if (Os.current.isWindows) {
-        return
-    }
-
     if (minimalVersion != null && minimalVersion.isValid) {
         val actualVersion = readRustCompilerVersion(execOperations, rustBinaries)
         if (actualVersion < minimalVersion) {
@@ -29,6 +26,7 @@ internal fun installRustComponentsIfNeeded(
 
     if (abiSet.isNotEmpty()) {
         installRustUp(execOperations, rustBinaries)
+        installCargoNdk(execOperations, rustBinaries)
 
         val installedAbiSet = readRustUpInstalledTargets(execOperations, rustBinaries)
         for (abi in abiSet) {
@@ -57,10 +55,54 @@ private fun installRustUp(execOperations: ExecOperations, rustBinaries: RustBina
 
     log("installing rustup")
 
+    when (Os.current.isWindows) {
+        true -> {
+            val tempFile = File.createTempFile("rustup-init", ".exe")
+            try {
+                execOperations.exec {
+                    commandLine("powershell", "-Command",
+                        "Invoke-WebRequest -Uri 'https://win.rustup.rs/x86_64' -OutFile '${tempFile.absolutePath}'")
+                }.assertNormalExitValue()
+                
+                execOperations.exec {
+                    commandLine(tempFile.absolutePath, "-y", "--default-toolchain", "stable")
+                }.assertNormalExitValue()
+            } finally {
+                tempFile.delete()
+            }
+        }
+        else -> {
+            execOperations.exec {
+                standardOutput = NullOutputStream
+                errorOutput = NullOutputStream
+                commandLine("bash", "-c", "\"curl\" --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
+            }.assertNormalExitValue()
+        }
+    }
+}
+
+private fun installCargoNdk(execOperations: ExecOperations, rustBinaries: RustBinaries) {
+    try {
+        val result = execOperations.exec {
+            standardOutput = NullOutputStream
+            errorOutput = NullOutputStream
+            executable(rustBinaries.cargoNdk)
+            args("--version")
+        }
+
+        if (result.exitValue == 0) {
+            return
+        }
+    } catch (_: Exception) {
+    }
+
+    log("installing cargo-ndk")
+    
     execOperations.exec {
         standardOutput = NullOutputStream
         errorOutput = NullOutputStream
-        commandLine("bash", "-c", "\"curl\" --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
+        executable(rustBinaries.cargo)
+        args("install", "cargo-ndk")
     }.assertNormalExitValue()
 }
 

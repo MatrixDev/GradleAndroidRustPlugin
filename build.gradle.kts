@@ -4,15 +4,15 @@ plugins {
     id("com.gradle.plugin-publish") version "1.3.0"
 }
 
-val pluginId = "io.github.MatrixDev.android-rust"
+val pluginId = "io.github.rodroidmods.android-rust"
 
 group = pluginId
-version = "0.5.0"
+version = "0.7.0"
 
 @Suppress("UnstableApiUsage")
 gradlePlugin {
-    website = "https://github.com/MatrixDev/GradleAndroidRustPlugin"
-    vcsUrl = "https://github.com/MatrixDev/GradleAndroidRustPlugin.git"
+    website = "https://github.com/rodroidmods/GradleAndroidRustPlugin"
+    vcsUrl = "https://github.com/rodroidmods/GradleAndroidRustPlugin.git"
 
     plugins {
         create("AndroidRust") {

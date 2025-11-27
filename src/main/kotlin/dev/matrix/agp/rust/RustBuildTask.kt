@@ -1,12 +1,21 @@
 package dev.matrix.agp.rust
 
 import dev.matrix.agp.rust.utils.Abi
-import dev.matrix.agp.rust.utils.Os
 import dev.matrix.agp.rust.utils.RustBinaries
 import dev.matrix.agp.rust.utils.SemanticVersion
+import dev.matrix.agp.rust.utils.log
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import java.io.File
@@ -43,64 +52,81 @@ internal abstract class RustBuildTask : DefaultTask() {
     @get:Input
     abstract val variantJniLibsDirectory: Property<File>
 
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val sourceFiles: ConfigurableFileCollection
+    
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val cargoToml: RegularFileProperty
+    
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
     @TaskAction
     fun taskAction() {
         val rustBinaries = rustBinaries.get()
         val abi = abi.get()
         val apiLevel = apiLevel.get()
-        val ndkVersion = ndkVersion.get()
         val ndkDirectory = ndkDirectory.get()
         val rustProfile = rustProfile.get()
         val rustProjectDirectory = rustProjectDirectory.get()
-        val cargoTargetDirectory = cargoTargetDirectory.get()
         val variantJniLibsDirectory = variantJniLibsDirectory.get()
 
-        val platform = when (Os.current) {
-            Os.Linux -> "linux-x86_64"
-            Os.MacOs -> "darwin-x86_64"
-            Os.Windows -> "windows-x86_64"
-            Os.Unknown -> throw Exception("OS is not supported")
+        require(rustProjectDirectory.exists()) {
+            "Rust project directory not found: $rustProjectDirectory"
+        }
+        
+        val cargoTomlFile = File(rustProjectDirectory, "Cargo.toml")
+        require(cargoTomlFile.exists()) {
+            "Cargo.toml not found in: $rustProjectDirectory"
+        }
+        
+        require(ndkDirectory.exists()) {
+            """
+            Android NDK not found at: $ndkDirectory
+            Please install NDK via Android Studio SDK Manager or set android.ndkDirectory
+            """.trimIndent()
         }
 
-        val toolchainFolder = File(ndkDirectory, "toolchains/llvm/prebuilt/$platform/bin")
-        val cc = File(toolchainFolder, abi.cc(apiLevel))
-        val cxx = File(toolchainFolder, abi.ccx(apiLevel))
-        val ar = File(toolchainFolder, abi.ar(ndkVersion.major))
+        log("Building ${cargoTomlFile.parentFile.name} for ${abi.androidName} (API $apiLevel)")
 
-        val cargoTargetTriplet = abi.rustTargetTriple
-            .replace('-', '_')
-            .uppercase()
+        try {
+            execOperations.exec {
+                standardOutput = System.out
+                errorOutput = System.out
+                workingDir = rustProjectDirectory
 
-        execOperations.exec {
-            standardOutput = System.out
-            errorOutput = System.out
-            workingDir = rustProjectDirectory
+                environment("ANDROID_NDK_HOME", ndkDirectory.absolutePath)
 
-            environment("CC_${abi.rustTargetTriple}", cc)
-            environment("CXX_${abi.rustTargetTriple}", cxx)
-            environment("AR_${abi.rustTargetTriple}", ar)
-            environment("CARGO_TARGET_DIR", cargoTargetDirectory.absolutePath)
-            environment("CARGO_TARGET_${cargoTargetTriplet}_LINKER", cc)
-
-            commandLine(rustBinaries.cargo)
-
-            args("build")
-            args("--lib")
-            args("--target", abi.rustTargetTriple)
-
-            if (rustProfile.isNotEmpty()) {
-                args("--profile", rustProfile)
-            }
-        }.assertNormalExitValue()
-
-        project.copy {
-            val dir = when (rustProfile == "dev") {
-                true -> "debug"
-                else -> rustProfile
-            }
-            include("*.so")
-            from(File(cargoTargetDirectory, "${abi.rustTargetTriple}/${dir}/"))
-            into(File(variantJniLibsDirectory, abi.androidName))
+                commandLine(rustBinaries.cargo)
+                
+                args("ndk")
+                args("-o", variantJniLibsDirectory.absolutePath)
+                args("--platform", apiLevel)
+                args("-t", abi.androidName)
+                args("build")
+                
+                if (rustProfile.isNotEmpty() && rustProfile != "dev") {
+                    args("--profile", rustProfile)
+                }
+            }.assertNormalExitValue()
+        } catch (e: Exception) {
+            throw GradleException(
+                """
+                Rust build failed for ${abi.androidName}
+                
+                Possible solutions:
+                - Check that your Cargo.toml has [lib] crate-type = ["cdylib"]
+                - Ensure NDK version ${ndkVersion.get()} is properly installed
+                - Ensure cargo-ndk is installed: cargo install cargo-ndk
+                - Set ANDROID_NDK_HOME environment variable to: $ndkDirectory
+                - Try running: cargo ndk -t ${abi.androidName} build
+                
+                Error: ${e.message}
+                """.trimIndent(),
+                e
+            )
         }
     }
 }

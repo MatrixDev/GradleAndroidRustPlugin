@@ -8,6 +8,7 @@ pluginManagement {
             }
         }
         mavenCentral()
+        mavenLocal() 
         gradlePluginPortal()
     }
 }
@@ -16,6 +17,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         mavenCentral()
+        mavenLocal() 
         google()
         maven("https://plugins.gradle.org/m2/")
     }
@@ -26,6 +28,6 @@ include(":app")
 
 includeBuild("..") {
     dependencySubstitution {
-        substitute(module("io.github.MatrixDev.android-rust:plugin"))
+        substitute(module("io.github.rodroidmods:android-rust-plugin")).using(project(":"))
     }
 }
