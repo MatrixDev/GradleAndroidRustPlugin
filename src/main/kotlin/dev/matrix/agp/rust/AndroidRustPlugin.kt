@@ -1,5 +1,6 @@
 package dev.matrix.agp.rust
 
+import com.android.build.api.dsl.CommonExtension
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import dev.matrix.agp.rust.utils.Abi
 import dev.matrix.agp.rust.utils.RustBinaries
@@ -11,7 +12,6 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.process.ExecOperations
 import java.io.File
-import java.util.Locale
 import javax.inject.Inject
 
 //
@@ -25,17 +25,18 @@ abstract class AndroidRustPlugin @Inject constructor(
     override fun apply(project: Project) {
         val rustBinaries = RustBinaries(project)
         val extension = project.extensions.create("androidRust", AndroidRustExtension::class.java)
-        val androidExtension = project.getAndroidExtension()
         val androidComponents = project.getAndroidComponentsExtension()
         val tasksByBuildType = HashMap<String, ArrayList<TaskProvider<RustBuildTask>>>()
 
-        androidComponents.finalizeDsl { dsl ->
+        androidComponents.finalizeDsl {
+            val androidExtension = project.getAndroidExtension()
             val allRustAbiSet = mutableSetOf<Abi>()
-            val ndkDirectory = androidExtension.ndkDirectory
+            // Use sdkComponents to get NDK directory (Provider<Directory>)
+            val ndkDirectory = androidComponents.sdkComponents.ndkDirectory.map { it.asFile }
             val ndkVersion = SemanticVersion(androidExtension.ndkVersion)
             val extensionBuildDirectory = project.layout.buildDirectory.dir("intermediates/rust").get().asFile
 
-            for (buildType in dsl.buildTypes) {
+            for (buildType in androidExtension.buildTypes) {
                 val buildTypeNameCap = buildType.name.replaceFirstChar(Char::titlecase)
 
                 val variantBuildDirectory = File(extensionBuildDirectory, buildType.name)
@@ -74,7 +75,7 @@ abstract class AndroidRustPlugin @Inject constructor(
                         val buildTask = project.tasks.register(buildTaskName, RustBuildTask::class.java) {
                             this.rustBinaries.set(rustBinaries)
                             this.abi.set(rustAbi)
-                            this.apiLevel.set(dsl.defaultConfig.minSdk ?: 21)
+                            this.apiLevel.set(androidExtension.defaultConfig.minSdk ?: 21)
                             this.ndkVersion.set(ndkVersion)
                             this.ndkDirectory.set(ndkDirectory)
                             this.rustProfile.set(rustConfiguration.profile)
@@ -87,7 +88,7 @@ abstract class AndroidRustPlugin @Inject constructor(
                     }
                 }
 
-                dsl.sourceSets.findByName(buildType.name)?.jniLibs?.srcDir(variantJniLibsDirectory)
+                androidExtension.sourceSets.findByName(buildType.name)?.jniLibs?.directories?.add(variantJniLibsDirectory.absolutePath)
             }
 
             val minimumSupportedRustVersion = SemanticVersion(extension.minimumSupportedRustVersion)

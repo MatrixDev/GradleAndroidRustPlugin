@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.android.rust)
 }
 
@@ -27,7 +26,7 @@ android {
 
     sourceSets {
         getByName("main") {
-            java.srcDir("src/rust_library")
+            java.directories.add("src/rust_library")
         }
     }
 
@@ -36,9 +35,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+
 }
 
 androidRust {
