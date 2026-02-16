@@ -14,4 +14,4 @@ google-material = "com.google.android.material:material:1.13.0"
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-android-rust = { id = "io.github.MatrixDev.android-rust", version = "0.5.0" }
+android-rust = { id = "io.github.MatrixDev.android-rust" } # version = "0.6.0"

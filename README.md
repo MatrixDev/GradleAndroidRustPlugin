@@ -20,7 +20,7 @@ Add dependency record to `libs.versions.toml` file:
 
 ```toml
 [plugins]
-android-rust = { id = "io.github.MatrixDev.android-rust", version = "0.5.0" }
+android-rust = { id = "io.github.MatrixDev.android-rust", version = "0.6.0" }
 ```
 
 Add dependencies to the root `build.gradle.kts` file:
