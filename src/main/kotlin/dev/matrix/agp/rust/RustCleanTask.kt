@@ -1,14 +1,13 @@
 package dev.matrix.agp.rust
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 internal abstract class RustCleanTask : DefaultTask() {
-    @get:Input
-    abstract val variantJniLibsDirectory: Property<File>
+    @get:OutputDirectory
+    abstract val variantJniLibsDirectory: DirectoryProperty
 
     @TaskAction
     fun taskAction() {

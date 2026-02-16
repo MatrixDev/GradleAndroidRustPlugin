@@ -2,8 +2,11 @@ package dev.matrix.agp.rust
 
 import dev.matrix.agp.rust.utils.RustBinaries
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import java.io.File
@@ -19,8 +22,8 @@ internal abstract class RustTestTask : DefaultTask() {
     @get:Input
     abstract val rustProjectDirectory: Property<File>
 
-    @get:Input
-    abstract val cargoTargetDirectory: Property<File>
+    @get:OutputDirectory
+    abstract val cargoTargetDirectory: DirectoryProperty
 
     @TaskAction
     fun taskAction() {
@@ -33,7 +36,7 @@ internal abstract class RustTestTask : DefaultTask() {
             errorOutput = System.out
             workingDir = rustProjectDirectory
 
-            environment("CARGO_TARGET_DIR", cargoTargetDirectory.absolutePath)
+            environment("CARGO_TARGET_DIR", cargoTargetDirectory)
 
             commandLine(rustBinaries.cargo)
 

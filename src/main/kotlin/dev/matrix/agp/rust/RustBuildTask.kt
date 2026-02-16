@@ -5,8 +5,11 @@ import dev.matrix.agp.rust.utils.Os
 import dev.matrix.agp.rust.utils.RustBinaries
 import dev.matrix.agp.rust.utils.SemanticVersion
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import java.io.File
@@ -28,8 +31,8 @@ internal abstract class RustBuildTask : DefaultTask() {
     @get:Input
     abstract val ndkVersion: Property<SemanticVersion>
 
-    @get:Input
-    abstract val ndkDirectory: Property<File>
+    @get:InputDirectory
+    abstract val ndkDirectory: DirectoryProperty
 
     @get:Input
     abstract val rustProfile: Property<String>
@@ -37,11 +40,11 @@ internal abstract class RustBuildTask : DefaultTask() {
     @get:Input
     abstract val rustProjectDirectory: Property<File>
 
-    @get:Input
-    abstract val cargoTargetDirectory: Property<File>
+    @get:OutputDirectory
+    abstract val cargoTargetDirectory: DirectoryProperty
 
-    @get:Input
-    abstract val variantJniLibsDirectory: Property<File>
+    @get:OutputDirectory
+    abstract val variantJniLibsDirectory: DirectoryProperty
 
     @TaskAction
     fun taskAction() {
@@ -62,10 +65,10 @@ internal abstract class RustBuildTask : DefaultTask() {
             Os.Unknown -> throw Exception("OS is not supported")
         }
 
-        val toolchainFolder = File(ndkDirectory, "toolchains/llvm/prebuilt/$platform/bin")
-        val cc = File(toolchainFolder, abi.cc(apiLevel))
-        val cxx = File(toolchainFolder, abi.ccx(apiLevel))
-        val ar = File(toolchainFolder, abi.ar(ndkVersion.major))
+        val toolchainFolder = ndkDirectory.dir("toolchains/llvm/prebuilt/$platform/bin")
+        val cc = toolchainFolder.dir(abi.cc(apiLevel))
+        val cxx = toolchainFolder.dir(abi.ccx(apiLevel))
+        val ar = toolchainFolder.dir(abi.ar(ndkVersion.major))
 
         val cargoTargetTriplet = abi.rustTargetTriple
             .replace('-', '_')
@@ -79,7 +82,7 @@ internal abstract class RustBuildTask : DefaultTask() {
             environment("CC_${abi.rustTargetTriple}", cc)
             environment("CXX_${abi.rustTargetTriple}", cxx)
             environment("AR_${abi.rustTargetTriple}", ar)
-            environment("CARGO_TARGET_DIR", cargoTargetDirectory.absolutePath)
+            environment("CARGO_TARGET_DIR", cargoTargetDirectory)
             environment("CARGO_TARGET_${cargoTargetTriplet}_LINKER", cc)
 
             commandLine(rustBinaries.cargo)
@@ -99,8 +102,8 @@ internal abstract class RustBuildTask : DefaultTask() {
                 else -> rustProfile
             }
             include("*.so")
-            from(File(cargoTargetDirectory, "${abi.rustTargetTriple}/${dir}/"))
-            into(File(variantJniLibsDirectory, abi.androidName))
+            from(cargoTargetDirectory.dir("${abi.rustTargetTriple}/${dir}/"))
+            into(variantJniLibsDirectory.dir(abi.androidName))
         }
     }
 }

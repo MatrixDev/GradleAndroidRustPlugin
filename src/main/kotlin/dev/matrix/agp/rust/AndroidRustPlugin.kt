@@ -1,17 +1,14 @@
 package dev.matrix.agp.rust
 
-import com.android.build.api.dsl.CommonExtension
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import dev.matrix.agp.rust.utils.Abi
 import dev.matrix.agp.rust.utils.RustBinaries
 import dev.matrix.agp.rust.utils.SemanticVersion
 import dev.matrix.agp.rust.utils.getAndroidComponentsExtension
-import dev.matrix.agp.rust.utils.getAndroidExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.process.ExecOperations
-import java.io.File
 import javax.inject.Inject
 
 //
@@ -24,35 +21,33 @@ abstract class AndroidRustPlugin @Inject constructor(
 ) : Plugin<Project> {
     override fun apply(project: Project) {
         val rustBinaries = RustBinaries(project)
-        val extension = project.extensions.create("androidRust", AndroidRustExtension::class.java)
+        val rustExtension = project.extensions.create("androidRust", AndroidRustExtension::class.java)
         val androidComponents = project.getAndroidComponentsExtension()
         val tasksByBuildType = HashMap<String, ArrayList<TaskProvider<RustBuildTask>>>()
 
-        androidComponents.finalizeDsl {
-            val androidExtension = project.getAndroidExtension()
+        androidComponents.finalizeDsl { androidExtension ->
             val allRustAbiSet = mutableSetOf<Abi>()
-            // Use sdkComponents to get NDK directory (Provider<Directory>)
-            val ndkDirectory = androidComponents.sdkComponents.ndkDirectory.map { it.asFile }
+            val ndkDirectory = androidComponents.sdkComponents.ndkDirectory
             val ndkVersion = SemanticVersion(androidExtension.ndkVersion)
-            val extensionBuildDirectory = project.layout.buildDirectory.dir("intermediates/rust").get().asFile
+            val extensionBuildDirectory = project.layout.buildDirectory.dir("intermediates/rust").get()
 
             for (buildType in androidExtension.buildTypes) {
                 val buildTypeNameCap = buildType.name.replaceFirstChar(Char::titlecase)
 
-                val variantBuildDirectory = File(extensionBuildDirectory, buildType.name)
-                val variantJniLibsDirectory = File(variantBuildDirectory, "jniLibs")
+                val variantBuildDirectory = extensionBuildDirectory.dir(buildType.name)
+                val variantJniLibsDirectory = variantBuildDirectory.dir("jniLibs")
 
                 val cleanTaskName = "clean${buildTypeNameCap}RustJniLibs"
                 val cleanTask = project.tasks.register(cleanTaskName, RustCleanTask::class.java) {
                     this.variantJniLibsDirectory.set(variantJniLibsDirectory)
                 }
 
-                for ((moduleName, module) in extension.modules) {
+                for ((moduleName, module) in rustExtension.modules) {
                     val moduleNameCap = moduleName.replaceFirstChar(Char::titlecase)
-                    val moduleBuildDirectory = File(variantBuildDirectory, "lib_$moduleName")
+                    val moduleBuildDirectory = variantBuildDirectory.dir("lib_$moduleName")
 
                     val rustBuildType = module.buildTypes[buildType.name]
-                    val rustConfiguration = mergeRustConfigurations(rustBuildType, module, extension)
+                    val rustConfiguration = mergeRustConfigurations(rustBuildType, module, rustExtension)
 
                     val testTask = when (rustConfiguration.runTests) {
                         true -> {
@@ -88,10 +83,12 @@ abstract class AndroidRustPlugin @Inject constructor(
                     }
                 }
 
-                androidExtension.sourceSets.findByName(buildType.name)?.jniLibs?.directories?.add(variantJniLibsDirectory.absolutePath)
+                androidExtension.sourceSets.findByName(buildType.name)?.also {
+                    it.jniLibs.directories.add(variantJniLibsDirectory.asFile.absolutePath)
+                }
             }
 
-            val minimumSupportedRustVersion = SemanticVersion(extension.minimumSupportedRustVersion)
+            val minimumSupportedRustVersion = SemanticVersion(rustExtension.minimumSupportedRustVersion)
             installRustComponentsIfNeeded(
                 execOperations,
                 minimumSupportedRustVersion,
@@ -143,7 +140,7 @@ abstract class AndroidRustPlugin @Inject constructor(
     private fun mergeRustConfigurations(vararg configurations: AndroidRustConfiguration?): AndroidRustConfiguration {
         val defaultConfiguration = AndroidRustConfiguration().also {
             it.profile = "release"
-            it.targets = Abi.values().mapTo(ArrayList(), Abi::rustName)
+            it.targets = Abi.entries.mapTo(ArrayList(), Abi::rustName)
             it.runTests = null
             it.disableAbiOptimization = null
         }
