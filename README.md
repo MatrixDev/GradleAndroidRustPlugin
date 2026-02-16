@@ -7,29 +7,39 @@ https://plugins.gradle.org/plugin/io.github.MatrixDev.android-rust
 
 # Usage
 
-Add dependencies to the root `build.gradle.kts` file
+Add dependencies to the root `settings.gradle.kts` file:
 
 ```kotlin
-buildscript {
-    repositories {
-        maven("https://plugins.gradle.org/m2/")
-    }
-
-    dependencies {
-        classpath("io.github.MatrixDev.android-rust:plugin:0.5.0")
-    }
+repositories {
+    // ...
+    maven("https://plugins.gradle.org/m2/")
 }
 ```
 
-Add plugin to the module's `build.gradle.kts` file
+Add dependency record to `libs.versions.toml` file:
+
+```toml
+[plugins]
+android-rust = { id = "io.github.MatrixDev.android-rust", version = "0.5.0" }
+```
+
+Add dependencies to the root `build.gradle.kts` file:
 
 ```kotlin
 plugins {
-    id("io.github.MatrixDev.android-rust")
+    alias(libs.plugins.android.rust) apply false
 }
 ```
 
-Add `androidRust` configuration
+Add plugin to the module's `build.gradle.kts` file:
+
+```kotlin
+plugins {
+    alias(libs.plugins.android.rust)
+}
+```
+
+Add `androidRust` configuration:
 
 ```kotlin
 androidRust {
@@ -47,7 +57,7 @@ This is the list of some additional flags that can be configured:
 androidRust {
     // MSRV, plugin will update rust if installed version is lower than requested
     minimumSupportedRustVersion = "1.62.1"
-    
+
     module("rust-library") {
         // path to your rust library
         path = file("src/rust_library")
@@ -81,29 +91,38 @@ androidRust {
 }
 ```
 
+# AGP Version Compatibility
+
+| Plugin Version | AGP Version | Status                      |
+|----------------|-------------|-----------------------------|
+| 0.6.0          | 9.0+        | Active development          |
+| 0.5.0          | 7.x – 8.x   | Maintained (bug fixes only) |
 
 # Development support
+
 Plugin will check for a magic property `android.injected.build.abi` set by Android Studio when
 running application on device. This will limit ABI targets to only required by the device and
 should speedup development quite a bit.
 
 In theory this should behave the same as a built-in support for the NdkBuild / CMake.
 
-
 # Goals
+
 - Building multiple rust libraries with ease
 - Allow builds to be configurable for common scenarios
 
-
 # Non-goals
+
 - Supporting all Gradle versions
 - Allow builds to be configurable for exotic scenarios
 
-
 # IDE Enviroment PATH Workaround
-On some systems (notably MacOS) gradle task might fail to locate rust binaries. At this moment there are multiple issues/discussions for both gradle and IntelliJ IDEs.
+
+On some systems (notably MacOS) gradle task might fail to locate rust binaries. At this moment there
+are multiple issues/discussions for both gradle and IntelliJ IDEs.
 
 To solve this problem cargo path can be provided in `local.properties` file:
+
 ```properties
 sdk.dir=...
 cargo.bin=/Users/{user}/.cargo/bin/
