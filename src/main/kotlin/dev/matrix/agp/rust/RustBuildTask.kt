@@ -6,6 +6,7 @@ import dev.matrix.agp.rust.utils.RustBinaries
 import dev.matrix.agp.rust.utils.SemanticVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
@@ -18,6 +19,9 @@ import javax.inject.Inject
 internal abstract class RustBuildTask : DefaultTask() {
     @get:Inject
     abstract val execOperations: ExecOperations
+
+    @get:Inject
+    abstract val fileSystemOperations: FileSystemOperations
 
     @get:Input
     abstract val rustBinaries: Property<RustBinaries>
@@ -96,7 +100,7 @@ internal abstract class RustBuildTask : DefaultTask() {
             }
         }.assertNormalExitValue()
 
-        project.copy {
+        fileSystemOperations.copy {
             val dir = when (rustProfile == "dev") {
                 true -> "debug"
                 else -> rustProfile
